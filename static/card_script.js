@@ -2,29 +2,27 @@
 const currentCard = document.getElementById("current-card");
 const readStack = document.getElementById("read-stack");
 const uploadBtn = document.querySelector('.upload-btn');
+const fileInput = document.getElementById('pdfUpload');
+
 let speechText = false;
 let magnifier = false;
 let dyslexicFont = false;
-const VOICE_ID = "ljX1ZrXuDIIRVcmiVSyR"
+let speechSynth = window.speechSynthesis; // Browser's built-in speech
 let currentCardIndex = 0;
+const VOICE_ID = "ljX1ZrXuDIIRVcmiVSyR"
 
 // Default data (placeholder until upload)
 let sections = [
   { text: "Upload a PDF to start!", simple_text: "Click the upload button.", explanation: "The app is waiting for your file." }
 ];
 
-// 1. NEW: Upload Logic
-const fileInput = document.getElementById('pdfUpload');
-
+// 1. UPLOAD LOGIC
 if (fileInput) {
   fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        console.log("File selected:", file.name); // Debugging check
-
         // Show loading state
-        const currentCard = document.getElementById("current-card");
         if(currentCard) currentCard.innerHTML = `<div class="reading-card"><p>✨ AI is reading your file...</p></div>`;
 
         const formData = new FormData();
@@ -52,36 +50,34 @@ if (fileInput) {
         } catch (err) {
             console.error(err);
             alert("Upload failed: " + err.message);
+            showCard(0); // Restore default
         }
-    });
-  } else {
-    console.error("Critical Error: Could not find element with ID 'pdfUpload' in HTML");
-  }
+  });
+}
 
-// 2. UPDATED: Create Card (Now handles Simpler Text!)
+// Create Card
 function createCard(section) {
   const sectionCard = document.createElement("div");
   sectionCard.className = "reading-card";
 
-  // 1. CONTAINER
+  // Container
   const contentWrapper = document.createElement("div");
   contentWrapper.className = "card-content";
 
-  // 2. TITLE (Always stays the same)
+  // Title
   const titleEl = document.createElement("h3");
   titleEl.className = "card-title";
   titleEl.innerText = section.title || "Section";
 
-  // 3. BODY TEXT (Changes based on selection)
+  // Body Text
   const textEl = document.createElement("p");
   textEl.className = "section-text";
   textEl.innerText = section.text; // Default to Original
 
-  // Assemble Text
   contentWrapper.appendChild(titleEl);
   contentWrapper.appendChild(textEl);
 
-  // 4. THE POPUP MENU with 3 Options
+  // Popup Menu Logic
   const helpBtn = document.createElement("span");
   helpBtn.className = "help-btn";
   helpBtn.innerText = "?";
@@ -89,24 +85,18 @@ function createCard(section) {
   const popup = document.createElement("div");
   popup.className = "options-popup";
 
-  // --- BUTTON 1: ORIGINAL ---
-  const originalBtn = document.createElement("div");
-  originalBtn.className = "option-pill active"; // Active by default
-  originalBtn.innerText = "📄 Original";
+  const originalBtn = createPill("📄 Original", true);
+  const simpleBtn = createPill("✨ Simplified", false);
+  const summaryBtn = createPill("📝 Summary", false);
 
-  // --- BUTTON 2: SIMPLIFIED ---
-  const simpleBtn = document.createElement("div");
-  simpleBtn.className = "option-pill";
-  simpleBtn.innerText = "✨ Simplified";
+  function createPill(text, isActive) {
+      const btn = document.createElement("div");
+      btn.className = `option-pill ${isActive ? 'active' : ''}`;
+      btn.innerText = text;
+      return btn;
+  }
 
-  // --- BUTTON 3: SUMMARY ---
-  const summaryBtn = document.createElement("div");
-  summaryBtn.className = "option-pill";
-  summaryBtn.innerText = "📝 Summary";
-
-  // --- CLICK HANDLERS ---
-  
-  // A helper to reset all buttons
+  // Pill Click Handlers
   function resetPills() {
       [originalBtn, simpleBtn, summaryBtn].forEach(btn => btn.classList.remove("active"));
   }
@@ -129,10 +119,7 @@ function createCard(section) {
       textEl.innerText = section.summary || "No summary available.";
   });
 
-  // Assemble Popup
-  popup.appendChild(originalBtn);
-  popup.appendChild(simpleBtn);
-  popup.appendChild(summaryBtn);
+  popup.append(originalBtn, simpleBtn, summaryBtn);
 
   // Toggle Popup
   helpBtn.addEventListener("click", (e) => {
@@ -140,20 +127,15 @@ function createCard(section) {
       popup.classList.toggle("show");
   });
 
-  // Close when clicking card
   sectionCard.addEventListener("click", () => {
       popup.classList.remove("show");
   });
 
-  // Final Assembly
-  sectionCard.appendChild(helpBtn);
-  sectionCard.appendChild(popup);
-  sectionCard.appendChild(contentWrapper);
-
+  sectionCard.append(helpBtn, popup, contentWrapper);
   return sectionCard;
 }
 
-// HELPER: Show Card
+// Show Card
 function showCard(index) {
   currentCard.innerHTML = "";
   if (index >= sections.length) {
@@ -164,11 +146,8 @@ function showCard(index) {
   const card = createCard(sections[index]);
   currentCard.appendChild(card);
   
-  // If Dyslexic Mode is ON, switch to simple text immediately
-  if (dyslexicFont) toggleSimpleMode(card, true);
-  
-  // Auto-read if enabled
-  if (speechText) readCurrentCard(card);
+  if (dyslexicFont) toggleDyslexicFont(); // Apply font if already on
+  if (speechText) speakCard(); // Auto-read if on
 }
 
 // Read current card using TTS
@@ -199,140 +178,99 @@ async function readCurrentCard(card) {
 
 // Magnifier
 const magnifierLens = document.getElementById("magnifierLens");
-const zoomLevel = 2;
+
+document.getElementById("magnifierToggle").addEventListener("change", (e) => {
+    magnifier = e.target.checked;
+    if (!magnifier) magnifierLens.style.display = "none";
+});
 
 document.addEventListener("mousemove", (e) => {
-  if (!magnifier) {
-    magnifierLens.style.display = "none";
-    return;
-  }
+    if (!magnifier) return;
 
-  const target = e.target;
-  if (target.classList.contains("section-text")) {
-    magnifierLens.style.display = "block";
+    const target = e.target;
+    // Check if we are hovering over text inside the card
+    if (target.classList.contains("section-text") || target.classList.contains("card-title")) {
+        magnifierLens.style.display = "block";
+        const zoomLevel = 2;
 
-    // Get cursor position relative to the text
-    const rect = target.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
+        // Position Lens
+        magnifierLens.style.left = (e.pageX - 90) + "px"; 
+        magnifierLens.style.top = (e.pageY - 90) + "px";
 
-    // Position the lens around the cursor
-    magnifierLens.style.left = e.pageX - magnifierLens.offsetWidth / 2 + "px";
-    magnifierLens.style.top = e.pageY - magnifierLens.offsetHeight / 2 + "px";
+        // Copy text into lens
+        magnifierLens.innerHTML = `<div class="zoomed-text">${target.innerText}</div>`;
+        const zoomContent = magnifierLens.querySelector(".zoomed-text");
 
-    // Create zoomed text inside the lens
-    magnifierLens.innerHTML = `<div class="magnifier-text">${target.innerText}</div>`;
+        // Align zoomed text
+        const rect = target.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
 
-    const zoomText = magnifierLens.querySelector(".magnifier-text");
-    zoomText.style.left = -offsetX * zoomLevel + magnifierLens.offsetWidth / 2 + "px";
-    zoomText.style.top = -offsetY * zoomLevel + magnifierLens.offsetHeight / 2 + "px";
-
-  } else {
-    magnifierLens.style.display = "none";
-  }
+        zoomContent.style.transform = `translate(${-offsetX * zoomLevel + 90}px, ${-offsetY * zoomLevel + 90}px) scale(${zoomLevel})`;
+        
+        // Match Font Styles
+        const compStyle = window.getComputedStyle(target);
+        zoomContent.style.font = compStyle.font;
+        zoomContent.style.fontFamily = compStyle.fontFamily;
+        zoomContent.style.lineHeight = compStyle.lineHeight;
+    } else {
+        magnifierLens.style.display = "none";
+    }
 });
 
 // Dyslexic-Friendly Font
 function toggleDyslexicFont() {
-  if (dyslexicFont) {
-    document.body.classList.add("dyslexic-font");
-  } else {
-    document.body.classList.remove("dyslexic-font");
-  }
-}
-
-
-// EVENT LISTENERS FOR TOGGLES:
-// 1. MAGNIFIER TOGGLE
-document.getElementById("magnifierToggle").addEventListener("change", (e) => {
-    magnifier = e.target.checked;
-    const lens = document.getElementById("magnifierLens");
-    
-    if (!magnifier) {
-        lens.style.display = "none";
-    }
-});
-
-// MAGNIFIER LOGIC (Mouse Movement)
-document.addEventListener("mousemove", (e) => {
-    if (!magnifier) return;
-    
-    const lens = document.getElementById("magnifierLens");
-    const target = e.target;
-    
-    // Only magnify if hovering over text
-    if (target.classList.contains("section-text") || target.classList.contains("card-title")) {
-        lens.style.display = "block";
-        
-        // Position Lens
-        const zoomLevel = 2; // How much larger?
-        lens.style.left = e.pageX - 75 + "px"; // Center the 150px lens
-        lens.style.top = e.pageY - 75 + "px";
-        
-        // Copy text into lens
-        lens.innerHTML = `<div class="zoomed-text">${target.innerText}</div>`;
-        
-        // Adjust zoomed text position inside lens to match cursor
-        const rect = target.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
-        
-        const zoomText = lens.querySelector(".zoomed-text");
-        zoomText.style.transform = `translate(${-offsetX * zoomLevel + 75}px, ${-offsetY * zoomLevel + 75}px) scale(${zoomLevel})`;
-        // Note: You need simple CSS for .zoomed-text in your stylesheet
-    } else {
-        lens.style.display = "none";
-    }
-});
-
-
-// 2. DYSLEXIC FONT TOGGLE
-document.getElementById("dyslexicToggle").addEventListener("change", (e) => {
-    dyslexicFont = e.target.checked;
-    
-    // Toggle class on the body (simplest way)
     if (dyslexicFont) {
         document.body.classList.add("dyslexic-mode");
     } else {
         document.body.classList.remove("dyslexic-mode");
     }
-    
-    // Optional: Also auto-switch to "Simplified" text if you want?
+}
+
+document.getElementById("dyslexicToggle").addEventListener("change", (e) => {
+    dyslexicFont = e.target.checked;
+    toggleDyslexicFont();
 });
 
-
 // 3. TEXT TO SPEECH TOGGLE
-document.getElementById("speechToggle").addEventListener("change", (e) => {
+const speechToggle = document.getElementById("speechToggle");
+const speechIcon = speechToggle.nextElementSibling;
+
+speechToggle.addEventListener("change", (e) => {
     speechText = e.target.checked;
     
     if (speechText) {
-        // Read the currently visible card
-        readCurrentCard();
+        speakCard();
+        speechIcon.classList.remove("icon-play");
+        speechIcon.classList.add("icon-pause");
     } else {
-        // Stop reading
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        speechSynth.cancel(); 
+        speechIcon.classList.remove("icon-pause");
+        speechIcon.classList.add("icon-play");
     }
 });
 
-// TTS FUNCTION (Using Browser's Built-in Voice for zero-latency)
-function readCurrentCard() {
-    if (!speechText) return;
-    if (window.speechSynthesis) window.speechSynthesis.cancel(); // Stop previous
+function speakCard() {
+    speechSynth.cancel(); 
 
-    // Get the text from the CURRENT active card
-    const activeCard = document.querySelector(".reading-card:last-child"); 
-    // Note: Since cards stack, the last one in DOM is usually the top one visually? 
-    // Wait, your stack logic might mean the 'currentCard' container holds the active one.
-    
-    const container = document.getElementById("current-card");
-    if (!container || !container.innerText) return;
+    const activeCardText = document.querySelector(".reading-card .section-text");
+    const activeCardTitle = document.querySelector(".reading-card .card-title");
 
-    const textToRead = container.innerText.replace("?", "").replace("📄 Original", "").replace("✨ Simplified", "").replace("📝 Summary", ""); // Clean up UI text
+    if (activeCardText) {
+      let fullText = (activeCardTitle ? activeCardTitle.innerText + ". " : "") + activeCardText.innerText;
+      
+      const utterance = new SpeechSynthesisUtterance(fullText);
+      utterance.rate = 0.9; 
 
-    const utterance = new SpeechSynthesisUtterance(textToRead);
-    utterance.rate = 0.9; // Slightly slower is better for accessibility
-    window.speechSynthesis.speak(utterance);
+      utterance.onend = () => {
+          speechToggle.checked = false;
+          speechIcon.classList.remove("icon-pause");
+          speechIcon.classList.add("icon-play");
+      };
+
+      speechSynth.speak(utterance);
+  }
 }
 
-// LOAD FIRST CARD:
+// Initial Load
 showCard(currentCardIndex);
