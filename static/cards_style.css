@@ -103,12 +103,14 @@ body {
     width: 100%; 
     height: 100%;
     
-    /* FIX: Force icons to be a consistent small size */
     background-size: 25px 25px; 
     background-position: center;
     background-repeat: no-repeat;
     
-    opacity: 0.6; 
+    /* FIX: Turn the default black icons into WHITE */
+    filter: invert(100%) brightness(100%);
+    opacity: 0.8; /* Make them nice and bright */
+    
     transition: all 0.2s ease;
 }
 
