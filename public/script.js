@@ -1,11 +1,18 @@
 // VARIABLES:
 const currentCard = document.getElementById("current-card");
 const readStack = document.getElementById("read-stack");
+const playBtn = document.getElementById("playBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const replayBtn = document.getElementById("replayBtn");
+
 let currentCardIndex = 0;
-let speechText = false;
 let magnifier = false;
 let dyslexicFont = false;
+
 const VOICE_ID = "ljX1ZrXuDIIRVcmiVSyR"
+let audio = null; // Global audio object
+let isPaused = false;
+
 const sections = [
   { text: "Section 1: The quick brown fox jumps over the lazy dog.", explanation: "This section is about a fox and a dog." },
   { text: "Section 2: Lorem ipsum dolor sit amet, consectetur adipiscing elit.", explanation: "This is placeholder text often used in design." },
@@ -42,41 +49,13 @@ function createCard(section) {
   return sectionCard;
 }
 
-//Show current card
+// Show current card
 function showCard(index) {
   currentCard.innerHTML = "";
-  if (index >= sections.length) return; // Done
+  if (index >= sections.length) return;
 
-  const card = createCard(sections[index]);
-  currentCard.appendChild(card);
-  // Automatically read if TTS is enabled
-  if (speechText) readCurrentCard(card);
-}
-
-// Read current card using TTS
-async function readCurrentCard(card) {
-  const text = card.querySelector(".section-text").innerText;
-  const response = await fetch("/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text,
-      voiceId: VOICE_ID
-    })
-  });
-
-  const audioBlob = await response.blob();
-  const audioUrl = URL.createObjectURL(audioBlob);
-  const audio = new Audio(audioUrl);
-
-  audio.onended = () => {
-    // When done, stack the card and show next
-    readStack.appendChild(card);
-    currentCardIndex++;
-    showCard(currentCardIndex);
-  };
-
-  audio.play();
+  const cardEl = createCard(sections[index]);
+  currentCard.appendChild(cardEl);
 }
 
 // Magnifier
@@ -123,7 +102,61 @@ function toggleDyslexicFont() {
   }
 }
 
-// EVENT LISTENERS FOR TOGGLES:
+// Control narrator audio
+async function playCurrentCard() {
+  if (currentCardIndex >= sections.length) return; // Done
+
+  const cardEl = currentCard.querySelector(".reading-card");
+  if (!cardEl) return;
+
+  const text = cardEl.querySelector(".section-text").innerText;
+
+  // Resume if paused
+  if (audio && isPaused) {
+    audio.play();
+    isPaused = false;
+    return;
+  }
+
+  // Fetch TTS from server
+  audio = new Audio();
+  const response = await fetch("/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, voiceId: VOICE_ID })
+  });
+
+  const audioBlob = await response.blob();
+  const audioUrl = URL.createObjectURL(audioBlob);
+  audio.src = audioUrl;
+
+  audio.onended = () => {
+    // Move card to read stack
+    readStack.appendChild(cardEl);
+    currentCardIndex++;
+    showCard(currentCardIndex);
+    // Auto-play next card
+    playCurrentCard();
+  };
+
+  audio.play();
+}
+
+function pauseAudio() {
+  if (audio && !audio.paused) {
+    audio.pause();
+    isPaused = true;
+  }
+}
+function replayCard() {
+  if (audio) {
+    audio.pause();
+    isPaused = false;
+    playCurrentCard();
+  }
+}
+
+// EVENT LISTENERS:
 document.getElementById("magnifierToggle").addEventListener("change", (e) => {
   magnifier = e.target.checked;
 });
@@ -133,14 +166,10 @@ document.getElementById("dyslexicToggle").addEventListener("change", (e) => {
   toggleDyslexicFont();
 });
 
-document.getElementById("speechToggle").addEventListener("change", e => {
-  speechText = e.target.checked;
-  // If TTS is enabled mid-way, read current card
-  if (speechText && currentCardIndex < sections.length) {
-    const activeCard = currentCard.querySelector(".reading-card");
-    if (activeCard) readCurrentCard(activeCard);
-  }
-});
+playBtn.addEventListener("click", playCurrentCard);
+pauseBtn.addEventListener("click", pauseAudio);
+replayBtn.addEventListener("click", replayCard);
+
 
 // LOAD FIRST CARD:
 showCard(currentCardIndex);
