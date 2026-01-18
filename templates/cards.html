@@ -3,22 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reading Accessibility Test</title>
+    <title>ReadAble - Reader</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='cards_style.css') }}">
-
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Merriweather:wght@700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Jeju+Myeongjo&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Merriweather:wght@700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Jeju+Myeongjo&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/logo.png') }}">
   </head>
 
   <body>
-      <div class="logo-container">
+    <header class="app-header">
+      <div class="logo">
         <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="ReadAble Logo" class="logo-img">
         <h1 class="logo-text">ReadAble</h1>
       </div>
@@ -36,7 +30,7 @@
 
         <label class="tool-btn" title="Text to Speech">
           <input type="checkbox" id="speechToggle" />
-          <span class="icon icon-speech"></span>
+          <span class="icon icon-play"></span>
         </label>
       </div>
     </header>
@@ -51,20 +45,14 @@
         </aside>
 
         <section class="card-stack-area">
-          <div id="read-stack"></div>
+          <div id="read-stack">
+              </div>
         </section>
       </div>
     </main>
 
     <div id="magnifierLens"></div>
 
-    <script>
-      window.ENV = {
-        ELEVEN_KEY: "{{ eleven_key }}",
-        VOICE_ID: "{{ voice_id }}",
-      };
-    </script>
-    
     <script src="{{ url_for('static', filename='card_script.js') }}"></script>
   </body>
 </html>
