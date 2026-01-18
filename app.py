@@ -19,39 +19,6 @@ app = Flask(__name__)
 def home():
     return render_template('index.html')
 
-def clean_text(raw_text):
-    """
-    Takes the messy PDF output and 'heals' broken sentences.
-    1. Replaces single newlines within a sentence with a space.
-    2. Removes multiple spaces.
-    3. Keeps double newlines (real paragraphs) if possible, 
-       but for this specific problem, flattening it mostly works best.
-    """
-    # Step 1: Replace multiple newlines with a unique marker (so we don't lose real paragraphs yet)
-    # (Assuming double newline means a real paragraph in the source)
-    text = re.sub(r'\n\s*\n', '||PARAGRAPH_BREAK||', raw_text)
-    
-    # Step 2: Replace single newlines with a space (This fixes the "broken sentence" issue)
-    text = text.replace('\n', ' ')
-    
-    # Step 3: Replace the marker back to a newline (optional) or just let the AI figure it out.
-    # For your "grouping" goal, sending it as one big block often works BETTER.
-    text = text.replace('||PARAGRAPH_BREAK||', '\n\n')
-    
-    # Step 4: Remove excessive spaces
-    text = re.sub(r'\s+', ' ', text).strip()
-    
-    return text
-
-def extract_text(file):
-    # Simple pdf extractor
-    pdf_reader = PyPDF2.PdfReader(file)
-    text = ""
-
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
-
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -61,31 +28,28 @@ def upload_file():
 
     # Read file bytes directly
     file_bytes = file.read()
-    
-    # try:
-    #     raw_text = extract_text(file)
-    # except Exception as e:
-    #     return jsonify({"error": f"Error reading PDF: {str(e)}"}), 500
-
-    # cleaned_text = clean_text(raw_text)
 
     # Prompt
-    prompt = f"""
-    You are an ADHD Reading Assistant. 
-    I have attached a PDF document. Your job is to extract the content and RESTRUCTURE it into easy-to-read "cards".
+    prompt = """
+    You are an ADHD Reading Assistant.
+    I have attached a PDF. Your job is to extract content and RESTRUCTURE it into "Dual-Mode Cards".
 
     ### RULES
-    1. **GROUPING:** Create cards that contain **3 to 5 sentences** each. 
-       - NEVER output a card with only 1 sentence.
-       - If you see a short sentence, merge it with the next one.
+    1. **GROUPING:** Group sentences into paragraphs of 3-5 sentences.
+    2. **SIMPLIFICATION:** For *every* group, write a second version that is:
+       - Grade 5 reading level.
+       - Uses simple vocabulary (e.g., change "utilize" to "use").
     
-    2. **CLEANING:** - Remove contact info, "Notes to Editors", addresses, and list of countries.
-       - Remove "EMBARGO" or "ENDS".
-    
-    3. **OUTPUT FORMAT:**
+    3. **OUTPUT FORMAT (Strict HTML):**
        - Use <h1> for the main title.
-       - Use <div class="reading-card"><p> [Content] </p></div> for the blocks.
-       - Return ONLY raw HTML string (no markdown blocks).
+       - Wrap every content block in a <div class="reading-card">.
+       - Inside the card, create TWO sections:
+         1. <div class="original-text"> [The merged original text] </div>
+         2. <div class="simple-text" style="display:none;"> [The simplified version] </div>
+         3. <button class="simplify-btn" onclick="toggleText(this)">✨ Simplify</button>
+       - Return ONLY raw HTML string (no markdown).
+
+    4. **CLEANING:** Remove contact info, footers, and "Notes to Editors".
     """
 
     try:
