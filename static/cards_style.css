@@ -29,6 +29,22 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* --- LOGO --- */
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px;
+}
+.logo-img { width: 40px; height: auto; }
+.logo-text {
+    font-family: 'Jeju Myeongjo', serif;
+    font-size: 32px;
+    letter-spacing: 1px;
+    color: #111;
+}
+
+
 body {
 font-family: 'Inter', sans-serif;
     /* This layers a strong purple glow (top right) over a soft pink base */

@@ -18,10 +18,9 @@
   </head>
 
   <body>
-    <header class="app-header">
-      <div class="logo">
-        <img src="static/assets/logo.png" alt="ReadAble Logo" class="logo-img" />
-        <span class="logo-text">ReadAble</span>
+      <div class="logo-container">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="ReadAble Logo" class="logo-img">
+        <h1 class="logo-text">ReadAble</h1>
       </div>
 
       <div class="toolbar">
