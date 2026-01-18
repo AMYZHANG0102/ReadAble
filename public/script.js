@@ -58,6 +58,34 @@ function showCard(index) {
   currentCard.appendChild(cardEl);
 }
 
+// Forward Navigation
+function goToNextCard() {
+  if (currentCardIndex < sections.length - 1) {
+    stopAudio();
+    currentCardIndex++;
+    showCard(currentCardIndex);
+  }
+}
+
+// Backward Navigation
+function goToPreviousCard() {
+  if (currentCardIndex > 0) {
+    stopAudio();
+    currentCardIndex--;
+    showCard(currentCardIndex);
+  }
+}
+
+// Stop audio playback
+function stopAudio() {
+  if (audio) {
+    audio.pause();
+    audio.currentTime = 0;
+    isPaused = false;
+  }
+}
+
+
 // Magnifier
 const magnifierLens = document.getElementById("magnifierLens");
 const zoomLevel = 2;
@@ -170,6 +198,56 @@ playBtn.addEventListener("click", playCurrentCard);
 pauseBtn.addEventListener("click", pauseAudio);
 replayBtn.addEventListener("click", replayCard);
 
+// Keyboard navigation
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") {
+    goToNextCard();
+  }
+  if (e.key === "ArrowLeft") {
+    goToPreviousCard();
+  }
+});
 
-// LOAD FIRST CARD:
+let scrollCooldown = false;
+
+// Mouse wheel scrolling navigation
+document.addEventListener("wheel", (e) => {
+  if (scrollCooldown) return;
+
+  if (e.deltaY > 0) {
+    goToNextCard(); // scroll down
+  } else {
+    goToPreviousCard(); // scroll up
+  }
+
+  scrollCooldown = true;
+  setTimeout(() => scrollCooldown = false, 500);
+});
+
+let touchStartX = 0;
+let touchEndX = 0;
+
+// Touch swipe navigation
+document.addEventListener("touchstart", (e) => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener("touchend", (e) => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const swipeDistance = touchEndX - touchStartX;
+
+  if (Math.abs(swipeDistance) < 50) return; // ignore small swipes
+
+  if (swipeDistance < 0) {
+    goToNextCard(); // swipe left
+  } else {
+    goToPreviousCard(); // swipe right
+  }
+}
+
+// LOAD FIRST CARD (INIT):
 showCard(currentCardIndex);
