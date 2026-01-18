@@ -79,6 +79,21 @@ async function readCurrentCard(card) {
   audio.play();
 }
 
+// HELPER: Toggle between Simple and Original Text
+function toggleSimpleMode(card, forceSimple = false) {
+    const textEl = card.querySelector(".section-text");
+    const isSimple = card.dataset.isSimple === "true";
+    
+    // If we want to force simple mode (e.g. when Dyslexic font is on)
+    if (forceSimple || !isSimple) {
+        textEl.innerText = card.dataset.simple;
+        card.dataset.isSimple = "true";
+    } else {
+        textEl.innerText = card.dataset.original;
+        card.dataset.isSimple = "false";
+    }
+}
+
 // Magnifier
 const magnifierLens = document.getElementById("magnifierLens");
 const zoomLevel = 2;

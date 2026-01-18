@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, render_template
 import os
 from dotenv import load_dotenv
+import json
+import re
 
 # Gemini AI
 from google import genai
@@ -19,37 +21,49 @@ app = Flask(__name__)
 def home():
     return render_template('index.html')
 
+@app.route('/cards')
+def test_cards():
+    return render_template('cards.html')
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
     
     file = request.files['file']
-
     # Read file bytes directly
     file_bytes = file.read()
 
     # Prompt
     prompt = """
-    You are an ADHD Reading Assistant.
-    I have attached a PDF. Your job is to extract content and RESTRUCTURE it into "Dual-Mode Cards".
+       You are an ADHD Reading Assistant.
+    I have attached a PDF. Extract the content and restructure it.
 
-    ### RULES
-    1. **GROUPING:** Group sentences into paragraphs of 3-5 sentences.
-    2. **SIMPLIFICATION:** For *every* group, write a second version that is:
-       - Grade 5 reading level.
-       - Uses simple vocabulary (e.g., change "utilize" to "use").
+    ### CRITICAL INSTRUCTION: STRICT SEGMENTATION
+    1.  **MERGE** the source text into one continuous stream.
+    2.  **SLICE** that stream into small, digestible cards.
     
-    3. **OUTPUT FORMAT (Strict HTML):**
-       - Use <h1> for the main title.
-       - Wrap every content block in a <div class="reading-card">.
-       - Inside the card, create TWO sections:
-         1. <div class="original-text"> [The merged original text] </div>
-         2. <div class="simple-text" style="display:none;"> [The simplified version] </div>
-         3. <button class="simplify-btn" onclick="toggleText(this)">✨ Simplify</button>
-       - Return ONLY raw HTML string (no markdown).
+    ### THE "GOLDILOCKS" RULE (Size Constraints)
+    - **Target Length:** 3 sentences per card.
+    - **Hard Maximum:** NEVER exceed 5 sentences per card.
+    - **Long Topics:** If a section is too long, SPLIT it into multiple cards.
+    
+    ### REQUIRED JSON STRUCTURE
+    Return a strict JSON Array of objects. Each object must have:
+    - "title": A short, 3-5 word header.
+    - "text": The original text (strictly 3-5 sentences).
+    - "simple_text": A Grade 5 simplified version (shorter sentences).
+    - "summary": A 1-sentence summary.
 
-    4. **CLEANING:** Remove contact info, footers, and "Notes to Editors".
+    Example Output:
+    [
+      {
+        "title": "International Trends", 
+        "text": "The study found a decline in reading attitudes. This was observed in 13 countries. Parents' attitudes dropped as well.", 
+        "simple_text": "People are enjoying reading less. This is happening in many countries.", 
+        "summary": "Reading enjoyment is dropping globally."
+      }
+    ]
     """
 
     try:
@@ -64,7 +78,18 @@ def upload_file():
                 )
             ]
         )
-        return jsonify({"html": response.text})
+
+        raw_text = response.text
+        print(f"DEBUG AI RESPONSE: {raw_text[:200]}")
+
+        match = re.search(r'\[.*\]', raw_text, re.DOTALL)
+
+        if match:
+            clean_json = match.group(0)
+            data = json.loads(clean_json)
+            return jsonify(data)
+        else:
+            return jsonify({"error": "AI not return valid"}), 500
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": f"Gemini Error: {str(e)}"}), 500
