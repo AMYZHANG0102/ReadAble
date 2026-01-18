@@ -1,0 +1,270 @@
+
+/* hon hon */
+/* --- 1. SETUP & VARIABLES --- */
+:root {
+    /* Colors extracted from your Figma screenshot */
+    --bg-gradient: linear-gradient(135deg, #FFFFFF 0%, #E0C3FC 100%);
+    --card-bg: #FFFFFF;
+    --text-primary: #111;
+    --text-secondary: #666;
+    --accent-color: #a855f7; /* Purple accent */
+    
+    /* Spacing */
+    --header-height: 80px;
+    --card-radius: 24px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+font-family: 'Inter', sans-serif;
+    
+    /* STRONGER GRADIENT MATCHING FIGMA */
+    /* This layers a strong purple glow (top right) over a soft pink base */
+    background: 
+        radial-gradient(circle at 100% 0%, #DEB6DA 0%, transparent 50%), /* The Purple Punch */
+        linear-gradient(135deg, #FFFFFF 0%, #eec2fa 100%); /* The Soft Base */
+        
+    min-height: 100vh;
+    background-attachment: fixed; 
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* --- 2. HEADER STYLES --- */
+.app-header {
+    height: var(--header-height);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-img {
+    width: 50px;  /* Adjust based on logo size */
+    height: auto;
+}
+
+.logo-text {
+    font-family: 'Jeju Myeongjo', serif;
+    color: #1a1a1a; /* Soft black is better than #000 on screens */
+    font-size: 48px;
+    letter-spacing: 4px; /* Slightly reduced from 4.8px for better web rendering */
+    margin-left: 15px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 16px;
+}
+
+/* Circular Tool Buttons */
+.tool-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.40); /* Glassmorphism effect */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+    background: #EFDBEC; 
+    border-color: #EFDBEC;
+    transform: translateY(-2px);
+}
+
+/* Hide the actual checkbox input */
+.tool-btn input { display: none; }
+
+/* ACTIVE STATE (When toggled ON) */
+.tool-btn:has(input:checked) {
+    background: #EFDBEC;
+    border-color: #dba4ea; /* Slightly darker border for contrast */
+    box-shadow: 0 0 15px rgba(239, 219, 236, 0.6); /* Glowy purple shadow */
+    transform: scale(1.05);
+}
+
+/* Generic Icon Setup */
+.tool-btn .icon {
+    display: block;
+    width: 30px;
+    height: 30px;
+    /* This ensures the image fits perfectly */
+    background-position: center;
+    background-size: contain; 
+    background-repeat: no-repeat;
+}
+
+/* Specific Image Paths */
+.icon-magnify {
+    background-image: url('assets/magnify.png'); 
+}
+
+.icon-font {
+    background-image: url('assets/font.png');
+}
+
+.icon-speech {
+    background-image: url('assets/speech.png');
+}
+
+/* --- 3. MAIN LAYOUT --- */
+.app-container {
+    display: flex;
+    justify-content: center; /* Pushes everything to the center */
+    align-items: center;     /* Vertically centers it */
+    min-height: 100vh;
+    padding-top: 60px;       /* Space for header */
+}
+
+/* The wrapper that holds Sidebar + Cards together */
+.center-stage {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start; /* Align tops */
+    justify-content: center; 
+    
+    /* CRITICAL FIX: Lock the width so they can't drift apart */
+    width: auto; 
+    gap: 30px; /* The specific distance between pills and card */
+}
+
+/* Sidebar Styles */
+.progress-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 50px; /* Push down slightly to align with card text */
+}
+
+.pill {
+    width: 6px;
+    height: 30px;
+    background-color: #DEDCD8;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.pill.active {
+    background-color: #6C6B6B;
+    height: 50px; /* Active one is longer */
+}
+
+/* --- CARD STACK AREA --- */
+.card-stack-area {
+    position: relative;
+    width: 550px;  /* Fixed width to match design */
+    height: 450px; /* Fixed height for portrait look */
+    /* No background here, just a transparent holder */
+}
+
+/* The Actual Card Appearance */
+.reading-card {
+background: #FFFCF5; /* Cream White */
+    border-radius: 24px;
+    padding: 50px;
+    
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Crisp shadow for pop */
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
+    z-index: 3; /* Top of the stack */
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* MIDDLE CARD (2nd Layer) */
+.reading-card::after {
+content: "";
+    position: absolute;
+    z-index: -1; /* Behind main card */
+    
+    /* Step down */
+    top: 15px;
+    left: 10px;  /* Slight indent for depth */
+    right: 10px;
+    height: 100%;
+    
+    background: #FFF9F0; 
+    border-radius: 24px;
+    border: 1px solid rgba(0,0,0,0.04); /* Border makes it crisp */
+    
+    /* Taper effect */
+    transform: scale(0.98); 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+/* BOTTOM CARD (3rd Layer) */
+.reading-card::before {
+content: "";
+    position: absolute;
+    z-index: -2; /* Behind middle card */
+    
+    /* Step down further */
+    top: 30px;
+    left: 20px;
+    right: 20px;
+    height: 100%;
+    
+    background: #FFF5E5; 
+    border-radius: 24px;
+    border: 1px solid rgba(0,0,0,0.04);
+    
+    /* Taper effect */
+    transform: scale(0.96);
+}
+
+/* Typography Fixes */
+.reading-card p {
+    font-size: 1.5rem; /* Bigger text */
+    line-height: 1.6;
+    color: #222;
+    font-family: 'Merriweather', serif; /* Use serif for body text too */
+}
+
+.help-btn {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 36px;
+    height: 36px;
+    
+    /* The Clean Look */
+    background: transparent; 
+    border: 2px solid #8C8C8C; /* Dark gray border */
+    color: #8C8C8C;            /* Matching text color */
+    
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.help-btn:hover {
+    background: #8C8C8C;
+    color: white;
+}
