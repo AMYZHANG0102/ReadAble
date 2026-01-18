@@ -1,26 +1,40 @@
 const fileInput = document.getElementById('pdfUpload');
+const stateEmpty = document.getElementById('state-empty');
+const stateSelected = document.getElementById('state-selected');
+const selectedFileName = document.getElementById('selectedFileName');
+const convertBtn = document.getElementById('convertBtn');
+const loadingText = document.getElementById('loadingText');
+
+let selectedFile = null;
 
 if (fileInput) {
-  fileInput.addEventListener('change', async (e) => {
+    // 1. LISTEN FOR FILE SELECTION
+    fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const fileNameEl = document.getElementById("fileName");
-        if (fileNameEl) {
-          fileNameEl.textContent = `Selected file: ${file.name}`;
-        }
+        selectedFile = file;
 
-        console.log("File selected:", file.name); // Debugging check
+        // UI: Switch to "Selected" state
+        stateEmpty.style.display = 'none';
+        stateSelected.style.display = 'flex';
+        selectedFileName.textContent = file.name;
+    });
 
-        // Show loading state
-        const currentCard = document.getElementById("current-card");
-        if(currentCard) currentCard.innerHTML = `<div class="reading-card"><p>✨ AI is reading your file...</p></div>`;
+    // 2. LISTEN FOR CONVERT CLICK
+    convertBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+
+        // UI: Show loading
+        convertBtn.style.display = 'none';
+        loadingText.style.display = 'block';
 
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', selectedFile);
 
         try {
-            const response = await fetch('http://localhost:5000/upload', {
+            // Send to Python
+            const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
             });
@@ -28,18 +42,16 @@ if (fileInput) {
             const data = await response.json();
             if (data.error) throw new Error(data.error);
 
-            // Save data
-            localStorage.setItem("sections", JSON.stringify(data));
-
-            // Redirect to cards page
+            // Save data & Redirect
+            localStorage.setItem("readingData", JSON.stringify(data));
             window.location.href = "/cards";
-
 
         } catch (err) {
             console.error(err);
             alert("Upload failed: " + err.message);
+            // Reset UI on error
+            convertBtn.style.display = 'block';
+            loadingText.style.display = 'none';
         }
     });
-  } else {
-    console.error("Critical Error: Could not find element with ID 'pdfUpload' in HTML");
-  }
+}

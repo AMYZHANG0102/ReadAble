@@ -3,12 +3,85 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home Page</title>
+<title>ReadAble - Home</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<div>
+  <div class="main-wrapper">
+  <div class="logo-container">
+    <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="ReadAble Logo" class="logo-img">
+    <h1 class="logo-text">ReadAble</h1>
+  </div>
+
+  <div class="body-container">
+
+    <div class="drag-drop-container" id="dropZone">
+      
+      <div id="state-empty" class="upload-state">
+        <img src="{{ url_for('static', filename='assets/file.png') }}" alt="Folder Icon" class="upload-icon-folder">
+        <p class="upload-hint">Drag and drop your reading documents!</p>
+        <button class="select-btn" onclick="document.getElementById('pdfUpload').click()">Select Files</button>
+      </div>
+
+      <div id="state-selected" class="upload-state" style="display: none;">
+        <div class="file-preview">
+          <img src="{{ url_for('static', filename='assets/pdf-icon.png') }}" alt="PDF" class="pdf-icon">
+          <span id="selectedFileName">Example.pdf</span>
+        </div>
+        <button class="convert-btn" id="convertBtn">Convert &rarr;</button>
+        <p id="loadingText" style="display: none; color: #666; margin-top:10px;">Processing...</p>
+      </div>
+
+      <input type="file" id="pdfUpload" accept="application/pdf" style="display: none;">
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="intro-text">
+      <h3>ReadAble helps people read long or complex documents more comfortably.</h3>
+      <p>
+        When a document is uploaded, the content is separated into short sections by AI.
+        Each section appears as its own card, making the document easier to move through using simple scrolling and a small set of supportive reading features.
+      </p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-box">
+            <div class="feature-header">
+                <span class="f-icon">🔍</span> <h3>Magnifier</h3>
+            </div>
+            <p>When users move their cursor hovers over text, the text becomes larger, this makes details easier to read and reduces accidental clicks.</p>
+        </div>
+        
+        <div class="feature-box">
+            <div class="feature-header">
+                <span class="f-icon">🔊</span> <h3>Voice</h3>
+            </div>
+            <p>The content can be read aloud using a gentle voice, which supports users who prefer listening or need a break from reading.</p>
+        </div> 
+
+        <div class="feature-box">
+            <div class="feature-header">
+                <span class="f-icon">📝</span> <h3>Text</h3>
+            </div>
+            <p>The text can be switched to a dyslexia-friendly style. This layout uses letter spacing and shapes that make words easier to recognize.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="feature-header">
+                <span class="f-icon">❓</span> <h3>AI Explain</h3>
+            </div>
+            <p>When the question mark is clicked, AI rewrites the selected text using simpler, more user-friendly language to help users understand.</p>
+        </div> 
+    </div>
+
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='home.js') }}"></script>
+
+<!-- <div>
   <div class="logo-container">
     <img src="static/assets/logo.png" alt="ReadAble Logo" class="logo-img">
     <h1 class="logo-text">ReadAble</h1>
@@ -56,6 +129,6 @@
         </div> 
     </div>
 
-<script src="{{ url_for('static', filename='home.js') }}"></script>
+<script src="{{ url_for('static', filename='home.js') }}"></script> -->
 </body>
 </html>

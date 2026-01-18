@@ -17,11 +17,6 @@ client = genai.Client(api_key=api_key)
 
 app = Flask(__name__)
 
-# ROUTE FOR TESTING
-@app.route("/test")
-def test():
-    return render_template('index.html')
-
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -56,7 +51,7 @@ def upload_file():
     ### REQUIRED JSON STRUCTURE
     Return a strict JSON Array of objects. Each object must have:
     - "title": A short, 3-5 word header.
-    - "text": The original text (strictly 3-5 sentences).
+    - "text": The original text (strictly 3-4 sentences).
     - "simple_text": A Grade 5 simplified version (shorter sentences).
     - "summary": A 1-sentence summary.
 

@@ -1,8 +1,6 @@
 // VARIABLES:
 const currentCard = document.getElementById("current-card");
 const readStack = document.getElementById("read-stack");
-const uploadBtn = document.querySelector('.upload-btn');
-const fileInput = document.getElementById('pdfUpload');
 
 let speechText = false;
 let magnifier = false;
@@ -11,49 +9,31 @@ let speechSynth = window.speechSynthesis; // Browser's built-in speech
 let currentCardIndex = 0;
 const VOICE_ID = "ljX1ZrXuDIIRVcmiVSyR"
 
-// Default data (placeholder until upload)
+// Default placeholder (in case they go to /cards directly without uploading)
 let sections = [
-  { text: "Upload a PDF to start!", simple_text: "Click the upload button.", explanation: "The app is waiting for your file." }
+  { 
+      title: "No File Loaded", 
+      text: "Please go back to the Home page and upload a PDF.", 
+      simple_text: "Go home and pick a file.", 
+      summary: "No content available." 
+  }
 ];
 
-// 1. UPLOAD LOGIC
-if (fileInput) {
-  fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // Show loading state
-        if(currentCard) currentCard.innerHTML = `<div class="reading-card"><p>✨ AI is reading your file...</p></div>`;
-
-        const formData = new FormData();
-        formData.append('file', file);
-
+// LOAD DATA
+function loadData() {
+    const storedData = localStorage.getItem("readingData");
+    
+    if (storedData) {
         try {
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-
-            // SUCCESS: Update global sections variable
-            // Make sure 'sections' is defined globally at the top of your file!
-            sections = data; 
-            
-            // Reset and show first card
-            currentCardIndex = 0;
-            const readStack = document.getElementById("read-stack");
-            if(readStack) readStack.innerHTML = "";
-            showCard(0);
-
-        } catch (err) {
-            console.error(err);
-            alert("Upload failed: " + err.message);
-            showCard(0); // Restore default
+            sections = JSON.parse(storedData);
+            console.log("Loaded data from Home page!");
+        } catch (e) {
+            console.error("Could not parse data", e);
         }
-  });
+    }
 }
+
+loadData();
 
 // Create Card
 function createCard(section) {
