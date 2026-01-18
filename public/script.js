@@ -13,6 +13,14 @@ const VOICE_ID = "ljX1ZrXuDIIRVcmiVSyR"
 let audio = null; // Global audio object
 let isPaused = false;
 
+const readingMetrics = {
+  cardStartTime: null,
+  replayCount: 0,
+  pauseCount: 0,
+  avgReadingTime: [],
+  speechRate: 1.0
+};
+
 const sections = [
   { text: "Section 1: The quick brown fox jumps over the lazy dog.", explanation: "This section is about a fox and a dog." },
   { text: "Section 2: Lorem ipsum dolor sit amet, consectetur adipiscing elit.", explanation: "This is placeholder text often used in design." },
@@ -57,34 +65,6 @@ function showCard(index) {
   const cardEl = createCard(sections[index]);
   currentCard.appendChild(cardEl);
 }
-
-// Forward Navigation
-function goToNextCard() {
-  if (currentCardIndex < sections.length - 1) {
-    stopAudio();
-    currentCardIndex++;
-    showCard(currentCardIndex);
-  }
-}
-
-// Backward Navigation
-function goToPreviousCard() {
-  if (currentCardIndex > 0) {
-    stopAudio();
-    currentCardIndex--;
-    showCard(currentCardIndex);
-  }
-}
-
-// Stop audio playback
-function stopAudio() {
-  if (audio) {
-    audio.pause();
-    audio.currentTime = 0;
-    isPaused = false;
-  }
-}
-
 
 // Magnifier
 const magnifierLens = document.getElementById("magnifierLens");
@@ -151,7 +131,11 @@ async function playCurrentCard() {
   const response = await fetch("/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, voiceId: VOICE_ID })
+    body: JSON.stringify({
+      text,
+      voiceId: VOICE_ID,
+      speechRate: readingMetrics.speechRate
+    })
   });
 
   const audioBlob = await response.blob();
@@ -176,11 +160,41 @@ function pauseAudio() {
     isPaused = true;
   }
 }
+
 function replayCard() {
+  readingMetrics.replayCount++; // track replays
+  // Slow speech speed rate if user replays multiple times
+  if (readingMetrics.replayCount >= 2) {
+    readingMetrics.speechRate = Math.max(0.85, readingMetrics.speechRate - 0.05);
+  }
+  stopAudio();
+  playCurrentCard();
+}
+
+// Forward Navigation
+function goToNextCard() {
+  if (currentCardIndex < sections.length - 1) {
+    stopAudio();
+    currentCardIndex++;
+    showCard(currentCardIndex);
+  }
+}
+
+// Backward Navigation
+function goToPreviousCard() {
+  if (currentCardIndex > 0) {
+    stopAudio();
+    currentCardIndex--;
+    showCard(currentCardIndex);
+  }
+}
+
+// Stop audio playback
+function stopAudio() {
   if (audio) {
     audio.pause();
+    audio.currentTime = 0;
     isPaused = false;
-    playCurrentCard();
   }
 }
 

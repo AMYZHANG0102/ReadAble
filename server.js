@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.static("public"));
 
 app.post("/tts", async (req, res) => {
-  const { text, voiceId } = req.body;
+  const { text, voiceId, speechRate } = req.body;
 
   // Fetch TTS from Eleven Labs API
   const response = await fetch(
@@ -26,7 +26,8 @@ app.post("/tts", async (req, res) => {
         text,
         voice_settings: {
           stability: 0.5,
-          similarity_boost: 0.5
+          similarity_boost: 0.5,
+          speed: speechRate ?? 1.0
         }
       })
     }
