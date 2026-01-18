@@ -1,5 +1,4 @@
-from flask import Flask, request, jsonify
-import PyPDF2
+from flask import Flask, request, jsonify, render_template
 import os
 from dotenv import load_dotenv
 
@@ -16,14 +15,9 @@ client = genai.Client(api_key=api_key)
 
 app = Flask(__name__)
 
-def extract_text(file):
-    # Simple pdf extractor
-    pdf_reader = PyPDF2.PdfReader(file)
-    text = ""
-
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -31,37 +25,44 @@ def upload_file():
         return jsonify({"error": "No file uploaded"}), 400
     
     file = request.files['file']
-    
-    try:
-        raw_text = extract_text(file)
-    except Exception as e:
-        return jsonify({"error": f"Error reading PDF: {str(e)}"}), 500
+
+    # Read file bytes directly
+    file_bytes = file.read()
 
     # Prompt
-    prompt = f"""
-    You are a strictly filtering and formatting AI. Your goal is to extract ONLY the educational body content from the text provided.
+    prompt = """
+    You are an ADHD Reading Assistant.
+    I have attached a PDF. Your job is to extract content and RESTRUCTURE it into "Dual-Mode Cards".
 
-    STRICT EXCLUSION RULES (Delete these instantly):
-    - NO contact information (emails, phone numbers, addresses).
-    - NO publishing details, copyrights, ISBNs, or citations.
-    - NO table of contents, indices, or prefaces.
-    - NO headers, footers, or page numbers.
+    ### RULES
+    1. **GROUPING:** Group sentences into paragraphs of 3-5 sentences.
+    2. **SIMPLIFICATION:** For *every* group, write a second version that is:
+       - Grade 5 reading level.
+       - Uses simple vocabulary (e.g., change "utilize" to "use").
+    
+    3. **OUTPUT FORMAT (Strict HTML):**
+       - Use <h1> for the main title.
+       - Wrap every content block in a <div class="reading-card">.
+       - Inside the card, create TWO sections:
+         1. <div class="original-text"> [The merged original text] </div>
+         2. <div class="simple-text" style="display:none;"> [The simplified version] </div>
+         3. <button class="simplify-btn" onclick="toggleText(this)">✨ Simplify</button>
+       - Return ONLY raw HTML string (no markdown).
 
-    FORMATTING RULES:
-    1. Output ONLY valid HTML.
-    2. Split long sections into smaller, readable chunks of approximately 4 sentences.
-    3. Wrap each chunk in a <div class="reading-card">.
-    4. Inside the card, use <h3> for subheadings and <p> for the 4-sentence chunks.
-    5. Do not change the wording of the body text, only split it.
-
-    Input Text:
-    {raw_text} 
+    4. **CLEANING:** Remove contact info, footers, and "Notes to Editors".
     """
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt
+            model='gemini-2.5-flash',
+            contents=[
+                types.Content(
+                    parts=[
+                        types.Part.from_text(text=prompt),
+                        types.Part.from_bytes(data=file_bytes, mime_type='application/pdf')
+                    ]
+                )
+            ]
         )
         return jsonify({"html": response.text})
     except Exception as e:
