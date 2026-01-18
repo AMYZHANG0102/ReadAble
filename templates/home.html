@@ -4,36 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home Page</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
 <div>
   <div class="logo-container">
-    <img src="assets/logo.png" alt="ReadAble Logo" class="logo-img">
+    <img src="static/assets/logo.png" alt="ReadAble Logo" class="logo-img">
     <h1 class="logo-text">ReadAble</h1>
   </div>
 
   <div class="body-container">
 
     <div class="drag-drop-container">
-      <img src="assets/file.png" alt="Upload Icon" class="upload-icon">
+      <img src="static/assets/file.png" alt="Upload Icon" class="upload-icon">
       <p style="font-weight: bold;">Drag and drop your file here</p>
 
-      <!-- Hidden file input -->
-      <input 
-        type="file" 
-        id="fileInput" 
-        style="display: none;"
-        accept=".pdf,.doc,.docx,.txt"
-      />
-
-      <!-- Button user clicks -->
-      <button id="selectFileBtn" style="width: 140px; height: 79px;">
-        Select File
-      </button>
-
-      <!-- Optional: show selected file name -->
+      <button class="upload-btn" onclick="document.getElementById('pdfUpload').click()">Upload PDF</button>
+      <input type="file" id="pdfUpload" accept="application/pdf" style="display: none;">
       <p id="fileName" style="margin-top:10px;"></p>
     </div>
 
@@ -68,6 +56,6 @@
         </div> 
     </div>
 
-<script src="home.js"></script>
+<script src="{{ url_for('static', filename='home.js') }}"></script>
 </body>
 </html>

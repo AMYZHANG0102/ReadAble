@@ -1,20 +1,45 @@
-let selectedFile = null;
+const fileInput = document.getElementById('pdfUpload');
 
-const fileInput = document.getElementById("fileInput");
-const selectFileBtn = document.getElementById("selectFileBtn");
-const fileNameDisplay = document.getElementById("fileName");
+if (fileInput) {
+  fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-// Open file picker when button is clicked
-selectFileBtn.addEventListener("click", () => {
-  fileInput.click();
-});
+        const fileNameEl = document.getElementById("fileName");
+        if (fileNameEl) {
+          fileNameEl.textContent = `Selected file: ${file.name}`;
+        }
 
-// File selection
-fileInput.addEventListener("change", (event) => {
-  selectedFile = event.target.files[0];
+        console.log("File selected:", file.name); // Debugging check
 
-  if (selectedFile) {
-    console.log("Selected file:", selectedFile);
-    fileNameDisplay.innerText = `Selected: ${selectedFile.name}`;
+        // Show loading state
+        const currentCard = document.getElementById("current-card");
+        if(currentCard) currentCard.innerHTML = `<div class="reading-card"><p>✨ AI is reading your file...</p></div>`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('http://localhost:5000/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+
+            // Save data
+            localStorage.setItem("sections", JSON.stringify(data));
+
+            // Redirect to cards page
+            window.location.href = "/cards";
+
+
+        } catch (err) {
+            console.error(err);
+            alert("Upload failed: " + err.message);
+        }
+    });
+  } else {
+    console.error("Critical Error: Could not find element with ID 'pdfUpload' in HTML");
   }
-});

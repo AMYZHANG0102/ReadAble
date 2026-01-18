@@ -17,9 +17,14 @@ client = genai.Client(api_key=api_key)
 
 app = Flask(__name__)
 
+# ROUTE FOR TESTING
+@app.route("/test")
+def test():
+    return render_template('index.html')
+
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('home.html')
 
 @app.route('/cards')
 def test_cards():

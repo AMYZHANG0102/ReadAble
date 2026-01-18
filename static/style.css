@@ -1,3 +1,16 @@
+:root {
+    /* Colors extracted from your Figma screenshot */
+    --bg-gradient: linear-gradient(135deg, #FFFFFF 0%, #E0C3FC 100%);
+    --card-bg: #FFFFFF;
+    --text-primary: #111;
+    --text-secondary: #666;
+    --accent-color: #a855f7; /* Purple accent */
+    
+    /* Spacing */
+    --header-height: 80px;
+    --card-radius: 24px;
+}
+
 @font-face {
   font-family: 'OpenDyslexic'; 
   src: url('assets/OpenDyslexic-Regular.otf') format('opentype');
@@ -88,8 +101,6 @@ p {
   transform: scale(2); /* zoom level */
   transform-origin: top left;
   position: absolute;
-<<<<<<< HEAD:static/style.css
-=======
 }
 
 .logo-img {
@@ -170,5 +181,4 @@ button {
   align-items: center;
   gap: 40px;
   margin-bottom: 40px;
->>>>>>> 7277ef86f2d3766aa445a11e9a97615c5c547c82:public/style.css
 }
