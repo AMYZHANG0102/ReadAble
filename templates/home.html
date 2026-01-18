@@ -19,18 +19,22 @@
     <div class="drag-drop-container" id="dropZone">
       
       <div id="state-empty" class="upload-state">
-        <img src="{{ url_for('static', filename='assets/file.png') }}" alt="Folder Icon" class="upload-icon-folder">
+        <img src="{{ url_for('static', filename='assets/file.png') }}" alt="Folder" class="upload-icon-folder">
         <p class="upload-hint">Drag and drop your reading documents!</p>
         <button class="select-btn" onclick="document.getElementById('pdfUpload').click()">Select Files</button>
       </div>
 
       <div id="state-selected" class="upload-state" style="display: none;">
         <div class="file-preview">
-          <img src="{{ url_for('static', filename='assets/pdf-icon.png') }}" alt="PDF" class="pdf-icon">
-          <span id="selectedFileName">Example.pdf</span>
+          <img class="pdf-icon" alt="PDF File"> 
+          <span id="selectedFileName">filename.pdf</span>
         </div>
-        <button class="convert-btn" id="convertBtn">Convert &rarr;</button>
-        <p id="loadingText" style="display: none; color: #666; margin-top:10px;">Processing...</p>
+        
+        <button class="convert-btn" id="convertBtn">
+            Convert <span style="font-size: 1.2em;">&rarr;</span>
+        </button>
+        
+        <p id="loadingText" style="display: none; color: #666;">Processing...</p>
       </div>
 
       <input type="file" id="pdfUpload" accept="application/pdf" style="display: none;">

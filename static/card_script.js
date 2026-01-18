@@ -26,14 +26,11 @@ function loadData() {
     if (storedData) {
         try {
             sections = JSON.parse(storedData);
-            console.log("Loaded data from Home page!");
         } catch (e) {
             console.error("Could not parse data", e);
         }
     }
 }
-
-loadData();
 
 // Create Card
 function createCard(section) {
@@ -54,8 +51,7 @@ function createCard(section) {
   textEl.className = "section-text";
   textEl.innerText = section.text; // Default to Original
 
-  contentWrapper.appendChild(titleEl);
-  contentWrapper.appendChild(textEl);
+  contentWrapper.append(titleEl, textEl);
 
   // Popup Menu Logic
   const helpBtn = document.createElement("span");
@@ -115,46 +111,64 @@ function createCard(section) {
   return sectionCard;
 }
 
-// Show Card
-function showCard(index) {
-  currentCard.innerHTML = "";
-  if (index >= sections.length) {
-      currentCard.innerHTML = "<div class='reading-card'><h3>You finished the file! 🎉</h3></div>";
-      return;
-  }
+// RENDER STACK (Replaces showCard)
+function renderStack() {
+   const container = document.getElementById("read-stack"); 
+    container.innerHTML = ""; 
 
-  const card = createCard(sections[index]);
-  currentCard.appendChild(card);
-  
-  if (dyslexicFont) toggleDyslexicFont(); // Apply font if already on
-  if (speechText) speakCard(); // Auto-read if on
+    sections.forEach((section, index) => {
+        const card = createCard(section);
+        
+        // --- STACKING LOGIC ---
+        // 1. Tighter Offset: 15px (looks like a deck)
+        // 2. HARD LIMIT: Stop increasing offset after card #3
+        //    Index 0 -> 0px
+        //    Index 1 -> 15px
+        //    Index 2 -> 30px
+        //    Index 3, 4, 5... -> 45px (They all stick here, covering the previous ones)
+        const limit = 3;
+        const step = 15; 
+        const offset = Math.min(index, limit) * step; 
+        
+        card.style.top = offset + "px"; 
+        
+        // Important: Ensure new cards sit ON TOP of old ones
+        card.style.zIndex = index + 1;
+
+        container.appendChild(card);
+    });
+
+    if (dyslexicFont) toggleDyslexicFont();
 }
+
+loadData()
+renderStack()
 
 // Read current card using TTS
-async function readCurrentCard(card) {
-  const text = card.querySelector(".section-text").innerText;
-  const response = await fetch("/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text,
-      voiceId: VOICE_ID
-    })
-  });
+// async function readCurrentCard(card) {
+//   const text = card.querySelector(".section-text").innerText;
+//   const response = await fetch("/tts", {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({
+//       text,
+//       voiceId: VOICE_ID
+//     })
+//   });
 
-  const audioBlob = await response.blob();
-  const audioUrl = URL.createObjectURL(audioBlob);
-  const audio = new Audio(audioUrl);
+//   const audioBlob = await response.blob();
+//   const audioUrl = URL.createObjectURL(audioBlob);
+//   const audio = new Audio(audioUrl);
 
-  audio.onended = () => {
-    // When done, stack the card and show next
-    readStack.appendChild(card);
-    currentCardIndex++;
-    showCard(currentCardIndex);
-  };
+//   audio.onended = () => {
+//     // When done, stack the card and show next
+//     readStack.appendChild(card);
+//     currentCardIndex++;
+//     showCard(currentCardIndex);
+//   };
 
-  audio.play();
-}
+//   audio.play();
+// }
 
 // Magnifier
 const magnifierLens = document.getElementById("magnifierLens");
