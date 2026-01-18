@@ -1,11 +1,26 @@
 // VARIABLES:
 const currentCard = document.getElementById("current-card");
 const readStack = document.getElementById("read-stack");
+const playBtn = document.getElementById("playBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const replayBtn = document.getElementById("replayBtn");
+
 let currentCardIndex = 0;
-let speechText = false;
 let magnifier = false;
 let dyslexicFont = false;
+
 const VOICE_ID = "ljX1ZrXuDIIRVcmiVSyR"
+let audio = null; // Global audio object
+let isPaused = false;
+
+const readingMetrics = {
+  cardStartTime: null,
+  replayCount: 0,
+  pauseCount: 0,
+  avgReadingTime: [],
+  speechRate: 1.0
+};
+
 const sections = [
   { text: "Section 1: The quick brown fox jumps over the lazy dog.", explanation: "This section is about a fox and a dog." },
   { text: "Section 2: Lorem ipsum dolor sit amet, consectetur adipiscing elit.", explanation: "This is placeholder text often used in design." },
@@ -42,41 +57,13 @@ function createCard(section) {
   return sectionCard;
 }
 
-//Show current card
+// Show current card
 function showCard(index) {
   currentCard.innerHTML = "";
-  if (index >= sections.length) return; // Done
+  if (index >= sections.length) return;
 
-  const card = createCard(sections[index]);
-  currentCard.appendChild(card);
-  // Automatically read if TTS is enabled
-  if (speechText) readCurrentCard(card);
-}
-
-// Read current card using TTS
-async function readCurrentCard(card) {
-  const text = card.querySelector(".section-text").innerText;
-  const response = await fetch("/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text,
-      voiceId: VOICE_ID
-    })
-  });
-
-  const audioBlob = await response.blob();
-  const audioUrl = URL.createObjectURL(audioBlob);
-  const audio = new Audio(audioUrl);
-
-  audio.onended = () => {
-    // When done, stack the card and show next
-    readStack.appendChild(card);
-    currentCardIndex++;
-    showCard(currentCardIndex);
-  };
-
-  audio.play();
+  const cardEl = createCard(sections[index]);
+  currentCard.appendChild(cardEl);
 }
 
 // HELPER: Toggle between Simple and Original Text
@@ -138,7 +125,95 @@ function toggleDyslexicFont() {
   }
 }
 
-// EVENT LISTENERS FOR TOGGLES:
+// Control narrator audio
+async function playCurrentCard() {
+  if (currentCardIndex >= sections.length) return; // Done
+
+  const cardEl = currentCard.querySelector(".reading-card");
+  if (!cardEl) return;
+
+  const text = cardEl.querySelector(".section-text").innerText;
+
+  // Resume if paused
+  if (audio && isPaused) {
+    audio.play();
+    isPaused = false;
+    return;
+  }
+
+  // Fetch TTS from server
+  audio = new Audio();
+  const response = await fetch("/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text,
+      voiceId: VOICE_ID,
+      speechRate: readingMetrics.speechRate
+    })
+  });
+
+  const audioBlob = await response.blob();
+  const audioUrl = URL.createObjectURL(audioBlob);
+  audio.src = audioUrl;
+
+  audio.onended = () => {
+    // Move card to read stack
+    readStack.appendChild(cardEl);
+    currentCardIndex++;
+    showCard(currentCardIndex);
+    // Auto-play next card
+    playCurrentCard();
+  };
+
+  audio.play();
+}
+
+function pauseAudio() {
+  if (audio && !audio.paused) {
+    audio.pause();
+    isPaused = true;
+  }
+}
+
+function replayCard() {
+  readingMetrics.replayCount++; // track replays
+  // Slow speech speed rate if user replays multiple times
+  if (readingMetrics.replayCount >= 2) {
+    readingMetrics.speechRate = Math.max(0.85, readingMetrics.speechRate - 0.05);
+  }
+  stopAudio();
+  playCurrentCard();
+}
+
+// Forward Navigation
+function goToNextCard() {
+  if (currentCardIndex < sections.length - 1) {
+    stopAudio();
+    currentCardIndex++;
+    showCard(currentCardIndex);
+  }
+}
+
+// Backward Navigation
+function goToPreviousCard() {
+  if (currentCardIndex > 0) {
+    stopAudio();
+    currentCardIndex--;
+    showCard(currentCardIndex);
+  }
+}
+
+// Stop audio playback
+function stopAudio() {
+  if (audio) {
+    audio.pause();
+    audio.currentTime = 0;
+    isPaused = false;
+  }
+}
+
+// EVENT LISTENERS:
 document.getElementById("magnifierToggle").addEventListener("change", (e) => {
   magnifier = e.target.checked;
 });
@@ -148,14 +223,60 @@ document.getElementById("dyslexicToggle").addEventListener("change", (e) => {
   toggleDyslexicFont();
 });
 
-document.getElementById("speechToggle").addEventListener("change", e => {
-  speechText = e.target.checked;
-  // If TTS is enabled mid-way, read current card
-  if (speechText && currentCardIndex < sections.length) {
-    const activeCard = currentCard.querySelector(".reading-card");
-    if (activeCard) readCurrentCard(activeCard);
+playBtn.addEventListener("click", playCurrentCard);
+pauseBtn.addEventListener("click", pauseAudio);
+replayBtn.addEventListener("click", replayCard);
+
+// Keyboard navigation
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") {
+    goToNextCard();
+  }
+  if (e.key === "ArrowLeft") {
+    goToPreviousCard();
   }
 });
 
-// LOAD FIRST CARD:
+let scrollCooldown = false;
+
+// Mouse wheel scrolling navigation
+document.addEventListener("wheel", (e) => {
+  if (scrollCooldown) return;
+
+  if (e.deltaY > 0) {
+    goToNextCard(); // scroll down
+  } else {
+    goToPreviousCard(); // scroll up
+  }
+
+  scrollCooldown = true;
+  setTimeout(() => scrollCooldown = false, 500);
+});
+
+let touchStartX = 0;
+let touchEndX = 0;
+
+// Touch swipe navigation
+document.addEventListener("touchstart", (e) => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener("touchend", (e) => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const swipeDistance = touchEndX - touchStartX;
+
+  if (Math.abs(swipeDistance) < 50) return; // ignore small swipes
+
+  if (swipeDistance < 0) {
+    goToNextCard(); // swipe left
+  } else {
+    goToPreviousCard(); // swipe right
+  }
+}
+
+// LOAD FIRST CARD (INIT):
 showCard(currentCardIndex);
