@@ -49,3 +49,23 @@ body {
 .section-text {
   cursor: pointer;
 }
+
+#magnifierLens {
+  position: absolute;
+  border: 3px solid #007bff;
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+  pointer-events: none; /* so it doesn't block hover */
+  display: none; /* hidden by default */
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+
+.magnifier-text {
+  transform: scale(2); /* zoom level */
+  transform-origin: top left;
+  position: absolute;
+}

@@ -50,21 +50,37 @@ function renderSections(sections) {
 renderSections(sections);
 
 // Magnifier
+const magnifierLens = document.getElementById("magnifierLens");
+const zoomLevel = 2;
+
 document.addEventListener("mousemove", (e) => {
-  if (!magnifier) return;
-
-  const target = e.target;
-  if (target.classList.contains("section-text")) {
-    target.style.fontSize = "1.5em";
+  if (!magnifier) {
+    magnifierLens.style.display = "none";
+    return;
   }
-});
-
-document.addEventListener("mouseout", (e) => {
-  if (!magnifier) return;
 
   const target = e.target;
   if (target.classList.contains("section-text")) {
-    target.style.fontSize = "";
+    magnifierLens.style.display = "block";
+
+    // Get cursor position relative to the text
+    const rect = target.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    // Position the lens around the cursor
+    magnifierLens.style.left = e.pageX - magnifierLens.offsetWidth / 2 + "px";
+    magnifierLens.style.top = e.pageY - magnifierLens.offsetHeight / 2 + "px";
+
+    // Create zoomed text inside the lens
+    magnifierLens.innerHTML = `<div class="magnifier-text">${target.innerText}</div>`;
+
+    const zoomText = magnifierLens.querySelector(".magnifier-text");
+    zoomText.style.left = -offsetX * zoomLevel + magnifierLens.offsetWidth / 2 + "px";
+    zoomText.style.top = -offsetY * zoomLevel + magnifierLens.offsetHeight / 2 + "px";
+
+  } else {
+    magnifierLens.style.display = "none";
   }
 });
 
