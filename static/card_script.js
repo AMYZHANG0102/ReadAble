@@ -56,7 +56,6 @@ function createCard(section) {
   // Popup Menu Logic
   const helpBtn = document.createElement("span");
   helpBtn.className = "help-btn";
-  helpBtn.innerText = "?";
 
   const popup = document.createElement("div");
   popup.className = "options-popup";
@@ -119,20 +118,10 @@ function renderStack() {
     sections.forEach((section, index) => {
         const card = createCard(section);
         
-        // --- STACKING LOGIC ---
-        // 1. Tighter Offset: 15px (looks like a deck)
-        // 2. HARD LIMIT: Stop increasing offset after card #3
-        //    Index 0 -> 0px
-        //    Index 1 -> 15px
-        //    Index 2 -> 30px
-        //    Index 3, 4, 5... -> 45px (They all stick here, covering the previous ones)
-        const limit = 3;
-        const step = 15; 
-        const offset = Math.min(index, limit) * step; 
+        // All cards dock at the same position to create the "receding" effect
+        card.style.top = "20px"; 
         
-        card.style.top = offset + "px"; 
-        
-        // Important: Ensure new cards sit ON TOP of old ones
+        // REVERSED Z-INDEX: The first card is on top, later cards are behind
         card.style.zIndex = index + 1;
 
         container.appendChild(card);
@@ -145,30 +134,30 @@ loadData()
 renderStack()
 
 // Read current card using TTS
-// async function readCurrentCard(card) {
-//   const text = card.querySelector(".section-text").innerText;
-//   const response = await fetch("/tts", {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({
-//       text,
-//       voiceId: VOICE_ID
-//     })
-//   });
+async function readCurrentCard(card) {
+  const text = card.querySelector(".section-text").innerText;
+  const response = await fetch("/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text,
+      voiceId: VOICE_ID
+    })
+  });
 
-//   const audioBlob = await response.blob();
-//   const audioUrl = URL.createObjectURL(audioBlob);
-//   const audio = new Audio(audioUrl);
+  const audioBlob = await response.blob();
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(audioUrl);
 
-//   audio.onended = () => {
-//     // When done, stack the card and show next
-//     readStack.appendChild(card);
-//     currentCardIndex++;
-//     showCard(currentCardIndex);
-//   };
+  audio.onended = () => {
+    // When done, stack the card and show next
+    readStack.appendChild(card);
+    currentCardIndex++;
+    showCard(currentCardIndex);
+  };
 
-//   audio.play();
-// }
+  audio.play();
+}
 
 // Magnifier
 const magnifierLens = document.getElementById("magnifierLens");

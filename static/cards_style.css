@@ -32,8 +32,8 @@ body {
     /* --- THE AURORA BACKGROUND --- */
     /* This matches your Figma design exactly */
     background: 
-        radial-gradient(circle at 0% 0%, #E0C3FC 0%, transparent 50%),
-        radial-gradient(circle at 100% 100%, #E0C3FC 0%, transparent 50%),
+        radial-gradient(circle at 70% 0%, #d798d0 0%, transparent 80%),
+        radial-gradient(circle at 0% 100%, #f9d0a6 0%, transparent 80%),
         linear-gradient(135deg, #F0F8FF 0%, #E6EFFF 100%);
 
     min-height: 100vh;
@@ -57,14 +57,18 @@ body {
     z-index: 100;
 }
 
-.logo { display: flex; align-items: center; gap: 12px; }
-.logo-img { width: 50px; height: auto; }
+.logo { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+}
+.logo-img { width: 60px; height: auto; }
 .logo-text {
     font-family: 'Jeju Myeongjo', serif;
-    color: #1a1a1a;
-    font-size: 48px;
-    letter-spacing: 2px;
-    margin-left: 15px;
+    font-size: 34px;
+    letter-spacing: 1.2px;
+    color: #111;
+    font-weight: 400;
 }
 
 .toolbar { display: flex; gap: 16px; }
@@ -103,13 +107,12 @@ body {
     width: 100%; 
     height: 100%;
     
-    background-size: 25px 25px; 
+    background-size: 30px 30px; 
     background-position: center;
     background-repeat: no-repeat;
-    
-    /* FIX: Turn the default black icons into WHITE */
-    filter: invert(100%) brightness(100%);
-    opacity: 0.8; /* Make them nice and bright */
+
+    filter: #fff;
+    opacity: 1; 
     
     transition: all 0.2s ease;
 }
@@ -117,7 +120,7 @@ body {
 /* COLOR FILTER: Turns Black Icon -> #DEB6DA (Lilac) */
 .tool-btn:hover .icon,
 .tool-btn:has(input:checked) .icon {
-    filter: invert(76%) sepia(34%) saturate(363%) hue-rotate(256deg) brightness(93%) contrast(93%);
+    filter: brightness(0) invert(86%) sepia(21%) saturate(952%) hue-rotate(253deg) brightness(95%) contrast(89%);
     opacity: 1;
 }
 
@@ -150,63 +153,111 @@ body {
     gap: 30px;
 }
 
-/* Sidebar */
-.progress-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 50px;
-}
-.pill {
-    width: 6px; height: 30px; background: #DEDCD8; border-radius: 10px; transition: all 0.3s;
-}
-.pill.active { background: #6C6B6B; height: 50px; }
-
-
 /* =========================================
    4. CARD STACK (THE STICKY LOGIC)
    ========================================= */
 .card-stack-area {
     position: relative;
-    width: 550px;
-    height: 500px; /* Fixed viewport height */
+    width: 620px;
+    height: 600px;
     
     /* SCROLLING ENABLED */
     overflow-y: auto; 
-    overflow-x: hidden;
     scroll-behavior: smooth;
-    
-    /* Hide scrollbars */
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    
-    padding-bottom: 100px; /* Space at bottom */
+    direction: rtl !important;
+    padding-left: 25px;
+
+    padding-top: 20px;
+    padding-bottom: 70px; /* Space at bottom */
+
+    scroll-timeline: --stack-scroll block;
 }
-.card-stack-area::-webkit-scrollbar { display: none; }
+.scroll-inner-wrapper {
+    /* Reset text so it's not flipped */
+    direction: ltr !important; 
+    
+    /* THE GAP: This creates the space between the bar and the card */
+    padding-left: 50px; 
+    padding-right: 20px; /* Optional: adds a bit of balance on the right */
+    
+    width: 100%;
+}
+.card-stack-area::-webkit-scrollbar {
+    width: 10px; 
+    display: block;
+}
+.card-stack-area::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.5); 
+    border-radius: 10px;
+    margin: 30px 0;
+}
+/* The Handle (Thumb) */
+.card-stack-area::-webkit-scrollbar-thumb {
+    background: #C492B1; 
+    border-radius: 10px;
+    transition: 2px solid rgba(255, 255, 255, 0.2);
+}
+/* Hover State */
+.card-stack-area::-webkit-scrollbar-thumb:hover {
+    background: #e4a4dd; /* Darker Lilac when grabbing */
+}
 
 /* THE CARD */
 .reading-card {
     background: #FFFCF5; 
     border-radius: 24px;
     padding: 50px;
-    
-    /* STICKY POSITIONING */
     position: sticky; 
-    /* 'top' is set dynamically by JS (0px, 15px, 30px...) */
+    top: 20px; /* Must match the JS top value */
     
     width: 100%;
-    min-height: 500px; /* Tall enough to cover cards behind it */
+    min-height: 500px;
+    margin-bottom: 400px; /* Provides scroll-depth for the transition */
     
-    margin-bottom: 20px; /* Space between cards in flow */
-    
-    /* Shadow casts UP to show separation */
     box-shadow: 0 -10px 30px rgba(0,0,0,0.08);
     border: 1px solid rgba(0,0,0,0.05);
+
+    /* Scroll Timeline setup */
+    view-timeline-name: --card-view;
+    view-timeline-axis: block;
+
+    animation: linear shrink-and-back both;
+    animation-timeline: --card-view;
     
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
+    /* FIX: Use 'exit-crossing' for smoother overlap detection */
+    animation-range: exit-crossing 0% exit-crossing 100%;
+}
+
+@keyframes shrink-and-back {
+    to {
+        /* Moving it up slightly (negative Y) helps hide it behind the header area */
+        transform: scale(0.92) translateY(-15px); 
+        
+        /* Lower opacity to fade it out */
+        opacity: 0.3; 
+        
+        /* Add a slight blur for depth of field */
+        filter: blur(3px); 
+
+        /* --- THE FIX FOR THE UGLY BORDERS --- */
+        /* Turn the border completely transparent at the end of the animation */
+        border-color: rgba(0, 0, 0, 0); 
+        
+        /* Remove the hard shadow so it doesn't look like it's floating */
+        box-shadow: none;
+        
+        /* Optional: Make the background slightly greyer to simulate depth */
+        background-color: #f4f1ea;
+    }
+}
+
+.reading-card:last-child {
+    margin-bottom: 0px !important; /* Removes the empty scroll space after the last card */
+    animation: none !important;     
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;         
+    pointer-events: auto;        /* Ensures buttons on the last card still work */
 }
 
 /* Typography */
@@ -221,12 +272,51 @@ body {
 
 /* Question Mark Button */
 .help-btn {
-    position: absolute; top: 30px; right: 30px; width: 36px; height: 36px;
-    background: transparent; border: 2px solid #8C8C8C; color: #8C8C8C;
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-weight: 600; cursor: pointer; transition: all 0.2s;
+position: absolute; 
+    top: 30px; 
+    right: 30px; 
+    width: 36px; 
+    height: 36px;
+    
+    /* 1. The Circle Border (Grey by default) */
+    border: 2px solid #8C8C8C; 
+    border-radius: 50%; 
+    background-color: transparent;
+    
+    /* Center the icon inside */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    cursor: pointer; 
+    transition: all 0.2s ease;
 }
-.help-btn:hover { background: #8C8C8C; color: white; }
+.help-btn::after {
+    content: "";
+    width: 30px; 
+    height: 30px; 
+    
+    /* This loads your image as a "Shape" */
+    -webkit-mask-image: url('assets/navigation.png');
+    mask-image: url('assets/navigation.png');
+    
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+
+    background-color: #8C8C8C; /* Matches the border grey */
+    transition: background-color 0.2s ease;
+}
+.help-btn:hover { 
+    background: #8C8C8C; 
+    background-color: #8C8C8C;
+}
+.help-btn:hover::after {
+    background-color: #FFFFFF; /* White on hover */
+}
 
 /* Popup Menu */
 .options-popup {
