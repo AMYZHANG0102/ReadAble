@@ -28,6 +28,7 @@ if (fileInput) {
         // UI: Show loading
         convertBtn.style.display = 'none';
         loadingText.style.display = 'block';
+        loadingText.innerHTML = "✨ Gemini is simplifying your reading...";
 
         const formData = new FormData();
         formData.append('file', selectedFile);

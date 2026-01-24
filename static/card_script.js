@@ -130,9 +130,6 @@ function renderStack() {
     if (dyslexicFont) toggleDyslexicFont();
 }
 
-loadData()
-renderStack()
-
 // Read current card using TTS
 async function readCurrentCard(card) {
   const text = card.querySelector(".section-text").innerText;
@@ -255,5 +252,9 @@ function speakCard() {
   }
 }
 
-// Initial Load
-showCard(currentCardIndex);
+async function init() {
+    loadData();      // Pull from localStorage first
+    renderStack();   // Then build the cards
+}
+
+init();

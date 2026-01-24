@@ -150,7 +150,7 @@ body {
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    gap: 30px;
+    position: relative;
 }
 
 /* =========================================
@@ -158,29 +158,31 @@ body {
    ========================================= */
 .card-stack-area {
     position: relative;
-    width: 620px;
-    height: 600px;
+    width: 880px;
+    height: 650px;
     
     /* SCROLLING ENABLED */
     overflow-y: auto; 
-    scroll-behavior: smooth;
-    direction: rtl !important;
-    padding-left: 25px;
+    overflow-x: visible;
 
+    direction: rtl !important;
+    scroll-behavior: smooth;
+
+    padding-left: 25px;
     padding-top: 20px;
     padding-bottom: 70px; /* Space at bottom */
+    padding-right: 0 !important;
 
     scroll-timeline: --stack-scroll block;
 }
 .scroll-inner-wrapper {
     /* Reset text so it's not flipped */
     direction: ltr !important; 
-    
     /* THE GAP: This creates the space between the bar and the card */
     padding-left: 50px; 
-    padding-right: 20px; /* Optional: adds a bit of balance on the right */
-    
+    padding-right: 210px;
     width: 100%;
+    overflow: visible;
 }
 .card-stack-area::-webkit-scrollbar {
     width: 10px; 
@@ -217,13 +219,13 @@ body {
     box-shadow: 0 -10px 30px rgba(0,0,0,0.08);
     border: 1px solid rgba(0,0,0,0.05);
 
+    overflow: visible !important;
+
     /* Scroll Timeline setup */
     view-timeline-name: --card-view;
     view-timeline-axis: block;
-
     animation: linear shrink-and-back both;
     animation-timeline: --card-view;
-    
     /* FIX: Use 'exit-crossing' for smoother overlap detection */
     animation-range: exit-crossing 0% exit-crossing 100%;
 }
@@ -320,15 +322,31 @@ position: absolute;
 
 /* Popup Menu */
 .options-popup {
-    position: absolute; top: 70px; right: 20px;
-    background: #FFFFFF; width: 180px; padding: 15px;
+    position: absolute; 
+    top: 30px; 
+    right: -200px;
+
+    background: #FFFFFF; 
+    width: 180px; 
+    padding: 15px;
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    display: flex; flex-direction: column; gap: 10px;
-    opacity: 0; pointer-events: none; transform: translateY(-10px);
-    transition: all 0.2s ease; z-index: 100;
+
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px;
+
+    opacity: 0; 
+    pointer-events: none; 
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    z-index: 100;
 }
-.options-popup.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.options-popup.show { 
+    opacity: 1; 
+    pointer-events: auto; 
+    transform: translateX(0); 
+}
 
 /* Popup Pills */
 .option-pill {

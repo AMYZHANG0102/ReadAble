@@ -1,8 +1,11 @@
-from flask import Flask, request, jsonify, render_template
+from logging import log
+from flask import Flask, request, jsonify, render_template, json
 import os
 from dotenv import load_dotenv
-import json
+import PyPDF2
 import re
+import io
+import pdfplumber
 
 # Gemini AI
 from google import genai
@@ -94,40 +97,98 @@ def test_cards():
 #         print(f"Error: {e}")
 #         return jsonify({"error": f"Gemini Error: {str(e)}"}), 500
 
+# @app.route('/upload', methods=['POST'])
+# def upload_file():
+#     # Simulate a "loading" delay so it feels real
+#     import time
+#     time.sleep(25) 
+
+#     mock_data = [
+#         {
+#             "title": "IEA's Literacy Day Reflection",
+#             "text": "This International Literacy Day, IEA (The International Association for the Evaluation of Educational Achievement) reflects on data from PIRLS (Progress in International Reading Literacy Study), in the context of the pandemic. The study investigates declining trends in reading attitudes. It asks if students were prepared for literacy at home during the pandemic.",
+#             "simple_text": "On International Literacy Day, the IEA looked at data from a study called PIRLS. They wanted to see if kids were ready to read at home during the pandemic. This study checks how much kids like reading.",
+#             "summary": "IEA reviewed PIRLS data to see how reading attitudes changed and if students were ready for home literacy during the pandemic."
+#         },
+#         {
+#             "title": "Global Reading Decline",
+#             "text": "Recent PIRLS analysis, titled 'Troubling trends: An international decline in attitudes toward reading,' found a general drop in reading attitudes. This decline affects both grade four students and their parents. It has been observed over 15 years, starting from 2001.",
+#             "simple_text": "A new study found that people are liking reading less. This includes fourth-grade students and their parents. This trend has been happening for over 15 years, since 2001.",
+#             "summary": "PIRLS data shows a 15-year decline in reading attitudes among fourth-grade students and their parents globally."
+#         },
+#         {
+#             "title": "Widespread Attitude Drop",
+#             "text": "Students' attitudes to reading decreased in 13 out of 18 participating countries across all study cycles. Parents' reading attitudes also fell in 14 out of 16 participating countries. These trends raise concerns about home reading during the pandemic.",
+#             "simple_text": "Kids' enjoyment of reading went down in many countries. Parents' enjoyment of reading also went down in most countries. This makes people worry about reading at home, especially during the pandemic.",
+#             "summary": "Student reading attitudes declined in 13 countries and parent attitudes in 14 countries, raising concerns about home literacy."
+#         },
+#         {
+#             "title": "Digital Access Challenges in 2016",
+#             "text": "In the 2016 PIRLS study, 36% of parents reported no available device for their child to read eBooks. Additionally, 62% of school principals said their school did not provide access to digital books. These figures highlight prior difficulties in supporting home literacy.",
+#             "simple_text": "Before the pandemic, many families lacked digital reading tools. In 2016, over one-third of parents had no device for eBooks. Most schools also did not provide digital books then.",
+#             "summary": "Pre-pandemic data showed significant gaps in access to digital reading resources for students."
+#         }
+#     ]
+
+#     return jsonify(mock_data)
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    # Simulate a "loading" delay so it feels real
-    import time
-    time.sleep(25) 
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    
+    file = request.files['file']
+    file_bytes = file.read()
 
-    mock_data = [
-        {
-            "title": "IEA's Literacy Day Reflection",
-            "text": "This International Literacy Day, IEA (The International Association for the Evaluation of Educational Achievement) reflects on data from PIRLS (Progress in International Reading Literacy Study), in the context of the pandemic. The study investigates declining trends in reading attitudes. It asks if students were prepared for literacy at home during the pandemic.",
-            "simple_text": "On International Literacy Day, the IEA looked at data from a study called PIRLS. They wanted to see if kids were ready to read at home during the pandemic. This study checks how much kids like reading.",
-            "summary": "IEA reviewed PIRLS data to see how reading attitudes changed and if students were ready for home literacy during the pandemic."
-        },
-        {
-            "title": "Global Reading Decline",
-            "text": "Recent PIRLS analysis, titled 'Troubling trends: An international decline in attitudes toward reading,' found a general drop in reading attitudes. This decline affects both grade four students and their parents. It has been observed over 15 years, starting from 2001.",
-            "simple_text": "A new study found that people are liking reading less. This includes fourth-grade students and their parents. This trend has been happening for over 15 years, since 2001.",
-            "summary": "PIRLS data shows a 15-year decline in reading attitudes among fourth-grade students and their parents globally."
-        },
-        {
-            "title": "Widespread Attitude Drop",
-            "text": "Students' attitudes to reading decreased in 13 out of 18 participating countries across all study cycles. Parents' reading attitudes also fell in 14 out of 16 participating countries. These trends raise concerns about home reading during the pandemic.",
-            "simple_text": "Kids' enjoyment of reading went down in many countries. Parents' enjoyment of reading also went down in most countries. This makes people worry about reading at home, especially during the pandemic.",
-            "summary": "Student reading attitudes declined in 13 countries and parent attitudes in 14 countries, raising concerns about home literacy."
-        },
-        {
-            "title": "Digital Access Challenges in 2016",
-            "text": "In the 2016 PIRLS study, 36% of parents reported no available device for their child to read eBooks. Additionally, 62% of school principals said their school did not provide access to digital books. These figures highlight prior difficulties in supporting home literacy.",
-            "simple_text": "Before the pandemic, many families lacked digital reading tools. In 2016, over one-third of parents had no device for eBooks. Most schools also did not provide digital books then.",
-            "summary": "Pre-pandemic data showed significant gaps in access to digital reading resources for students."
-        }
-    ]
+    try:
+        # Local PDF Text Extraction
+        full_text = ""
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + " "
 
-    return jsonify(mock_data)
+        if len(full_text.strip()) == 0:
+            return jsonify({"error": "No text found in PDF. It might be an image/scan."}), 400
+        
+        # Chunk text into smaller pieces
+        if len(full_text.strip()) > 50:
+            sentences = re.split(r'(?<=[.!?]) +', full_text.strip())
+            chunks = [" ".join(sentences[i:i+4]) for i in range(0, len(sentences), 4)]
+
+            processed_cards = []
+
+            # AI transforms text
+            for chunk in chunks[:10]:
+                prompt = f"""
+                You are an ADHD Reading Assistant. Simplify and summarize this text:
+                
+                TEXT: "{chunk}"
+                
+                Return JSON:
+                {{
+                "title": "3-5 word headline",
+                "simple_text": "Grade 5 level version",
+                "summary": "2-3 sentence summary"
+                }}
+                """
+                
+                response = client.models.generate_content(
+                    model = 'gemini-2.5-flash', 
+                    contents = prompt,
+                    config = types.GenerateContentConfig(response_mime_type='application/json')
+                )
+                
+                # Parse the JSON and add the original text back in locally
+                card_data = json.loads(response.text)
+                # Keep the original text for the "📄 Original" button
+                card_data["text"] = chunk 
+                processed_cards.append(card_data)
+            return jsonify(processed_cards)
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
